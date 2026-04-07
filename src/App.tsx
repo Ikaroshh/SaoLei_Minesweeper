@@ -147,7 +147,7 @@ class AudioManager {
 const audio = new AudioManager();
 
 // --- Game Logic Types ---
-type Difficulty = 'easy' | 'medium' | 'hard';
+type Difficulty = 'easy' | 'medium' | 'hard' | 'custom';
 type CellStatus = 'hidden' | 'revealed' | 'flagged';
 interface Cell {
   isMine: boolean;
@@ -157,7 +157,7 @@ interface Cell {
   y: number;
 }
 
-const CONFIG = {
+const DEFAULT_CONFIG = {
   easy: { rows: 9, cols: 9, mines: 10 },
   medium: { rows: 16, cols: 16, mines: 40 },
   hard: { rows: 16, cols: 30, mines: 99 },
@@ -165,6 +165,7 @@ const CONFIG = {
 
 export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [customConfig, setCustomConfig] = useState({ rows: 20, cols: 20, mines: 50 });
   const [grid, setGrid] = useState<Cell[][]>([]);
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'won' | 'lost'>('idle');
   const [timer, setTimer] = useState(0);
@@ -178,6 +179,13 @@ export default function App() {
   const [showGameOverOverlay, setShowGameOverOverlay] = useState(true);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const getConfig = useCallback((diff: Difficulty) => {
+    if (diff === 'custom') return customConfig;
+    return DEFAULT_CONFIG[diff];
+  }, [customConfig]);
+
+  const currentConfig = getConfig(difficulty);
 
   useEffect(() => {
     audio.setSfxEnabled(sfxEnabled);
@@ -203,7 +211,7 @@ export default function App() {
   }, [gameState]);
 
   const initGrid = useCallback((diff: Difficulty) => {
-    const { rows, cols } = CONFIG[diff];
+    const { rows, cols } = diff === 'custom' ? customConfig : DEFAULT_CONFIG[diff];
     const newGrid: Cell[][] = [];
     for (let y = 0; y < rows; y++) {
       const row: Cell[] = [];
@@ -217,14 +225,14 @@ export default function App() {
     setTimer(0);
     setFlagsUsed(0);
     if (timerRef.current) clearInterval(timerRef.current);
-  }, []);
+  }, [customConfig]);
 
   useEffect(() => {
     initGrid(difficulty);
   }, [difficulty, initGrid]);
 
   const startGame = (firstX: number, firstY: number) => {
-    const { rows, cols, mines } = CONFIG[difficulty];
+    const { rows, cols, mines } = currentConfig;
     // Deep clone to avoid mutations
     const newGrid = grid.map(row => row.map(cell => ({ ...cell })));
     
@@ -285,7 +293,7 @@ export default function App() {
     audio.playClick();
 
     const floodFill = (cx: number, cy: number) => {
-      if (cx < 0 || cx >= CONFIG[difficulty].cols || cy < 0 || cy >= CONFIG[difficulty].rows) return;
+      if (cx < 0 || cx >= currentConfig.cols || cy < 0 || cy >= currentConfig.rows) return;
       const c = newGrid[cy][cx];
       if (c.status !== 'hidden' || c.isMine) return;
 
@@ -306,7 +314,7 @@ export default function App() {
   };
 
   const checkWin = (currentGrid: Cell[][]) => {
-    const { mines } = CONFIG[difficulty];
+    const { mines } = currentConfig;
     let hiddenCount = 0;
     currentGrid.forEach(row => row.forEach(c => {
       if (c.status === 'hidden' || c.status === 'flagged') hiddenCount++;
@@ -328,7 +336,7 @@ export default function App() {
       startGame(x, y);
     } else if (cell.status === 'revealed') {
       // Chording logic
-      const { rows, cols } = CONFIG[difficulty];
+      const { rows, cols } = currentConfig;
       let flagsAround = 0;
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
@@ -482,7 +490,7 @@ export default function App() {
         animate={{ opacity: 1 }}
         className="w-full max-w-fit mb-6 md:mb-8 flex items-center gap-3 md:gap-6"
       >
-        <StatBox label="MINES" value={CONFIG[difficulty].mines - flagsUsed} />
+        <StatBox label="MINES" value={currentConfig.mines - flagsUsed} />
         <button 
           onClick={resetGame}
           className="group p-3 md:p-4 bg-white border border-gray-200 rounded-xl md:rounded-2xl hover:border-blue-500 transition-all active:scale-95 shadow-sm"
@@ -500,14 +508,14 @@ export default function App() {
         {/* Decorative corner element */}
         <div className="absolute top-0 left-0 w-16 h-16 md:w-24 md:h-24 bg-gray-50 -translate-x-8 -translate-y-8 md:-translate-x-12 md:-translate-y-12 rotate-45 border-r border-gray-200 z-0" />
         <div className="absolute top-3 left-3 md:top-4 md:left-4 text-[8px] md:text-[10px] font-bold text-gray-300 uppercase tracking-widest z-20">
-          Grid: {CONFIG[difficulty].rows}x{CONFIG[difficulty].cols}
+          Grid: {currentConfig.rows}x{currentConfig.cols}
         </div>
         
         <div className="overflow-x-auto pb-4 pt-8 md:pt-4 scrollbar-hide">
           <div 
             className="grid gap-1 md:gap-1.5 relative z-10 mx-auto"
             style={{ 
-              gridTemplateColumns: `repeat(${CONFIG[difficulty].cols}, auto)`,
+              gridTemplateColumns: `repeat(${currentConfig.cols}, min-content)`,
               width: 'fit-content'
             }}
           >
@@ -722,16 +730,16 @@ export default function App() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl p-8 border border-gray-100"
+              className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-gray-100 max-h-[90vh] overflow-y-auto scrollbar-hide"
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Difficulty</h2>
                 <button 
                   onClick={() => setShowDifficultyModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <RefreshCw size={20} className="text-gray-400 rotate-45" />
+                  <X size={20} className="text-gray-400" />
                 </button>
               </div>
               
@@ -740,7 +748,7 @@ export default function App() {
                   <button
                     key={d}
                     onClick={() => changeDifficulty(d)}
-                    className={`w-full flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${
+                    className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
                       difficulty === d 
                         ? 'border-blue-500 bg-blue-50/50' 
                         : 'border-gray-100 hover:border-gray-200'
@@ -751,7 +759,7 @@ export default function App() {
                         {d}
                       </div>
                       <div className="text-xs text-gray-400 font-medium mt-0.5">
-                        {CONFIG[d].rows}x{CONFIG[d].cols} • {CONFIG[d].mines} Mines
+                        {DEFAULT_CONFIG[d].rows}x{DEFAULT_CONFIG[d].cols} • {DEFAULT_CONFIG[d].mines} Mines
                       </div>
                     </div>
                     {difficulty === d && (
@@ -761,6 +769,74 @@ export default function App() {
                     )}
                   </button>
                 ))}
+
+                {/* Custom Difficulty Section */}
+                <div className={`p-4 rounded-2xl border-2 transition-all ${
+                  difficulty === 'custom' 
+                    ? 'border-blue-500 bg-blue-50/50' 
+                    : 'border-gray-100'
+                }`}>
+                  <button
+                    onClick={() => setDifficulty('custom')}
+                    className="w-full flex items-center justify-between mb-4"
+                  >
+                    <div className="text-left">
+                      <div className={`font-bold capitalize ${difficulty === 'custom' ? 'text-blue-600' : 'text-gray-900'}`}>
+                        Custom
+                      </div>
+                      <div className="text-xs text-gray-400 font-medium mt-0.5">
+                        Set your own rules
+                      </div>
+                    </div>
+                    {difficulty === 'custom' && (
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      </div>
+                    )}
+                  </button>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Rows</label>
+                      <input 
+                        type="number" 
+                        value={customConfig.rows}
+                        onChange={(e) => setCustomConfig(prev => ({ ...prev, rows: Math.min(50, Math.max(5, parseInt(e.target.value) || 5)) }))}
+                        className="w-full p-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-center focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Cols</label>
+                      <input 
+                        type="number" 
+                        value={customConfig.cols}
+                        onChange={(e) => setCustomConfig(prev => ({ ...prev, cols: Math.min(50, Math.max(5, parseInt(e.target.value) || 5)) }))}
+                        className="w-full p-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-center focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Mines</label>
+                      <input 
+                        type="number" 
+                        value={customConfig.mines}
+                        onChange={(e) => setCustomConfig(prev => ({ ...prev, mines: Math.min(customConfig.rows * customConfig.cols - 1, Math.max(1, parseInt(e.target.value) || 1)) }))}
+                        className="w-full p-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-center focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  
+                  {difficulty === 'custom' && (
+                    <button 
+                      onClick={() => {
+                        initGrid('custom');
+                        setShowDifficultyModal(false);
+                      }}
+                      className="w-full mt-4 py-2 bg-blue-500 text-white text-xs font-bold rounded-xl hover:bg-blue-600 transition-colors"
+                    >
+                      Apply Custom Settings
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -821,7 +897,7 @@ const CellComponent = React.memo(({
 
   // Explicitly define classes to avoid any sync issues
   const getCellClasses = () => {
-    const base = "w-7 h-7 md:w-10 md:h-10 flex items-center justify-center text-xs md:text-sm font-black cursor-pointer rounded-md md:rounded-lg select-none ";
+    const base = "w-8 h-8 md:w-10 md:h-10 flex-shrink-0 flex items-center justify-center text-xs md:text-sm font-black cursor-pointer rounded-md md:rounded-lg select-none ";
     if (isRevealed) {
       if (cell.isMine) return base + "bg-red-500 text-white shadow-none border-none";
       return base + "bg-white border border-gray-100 shadow-none";
