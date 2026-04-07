@@ -511,7 +511,7 @@ export default function App() {
           Grid: {currentConfig.rows}x{currentConfig.cols}
         </div>
         
-        <div className="overflow-x-auto pb-4 pt-8 md:pt-4 scrollbar-hide">
+        <div className="overflow-x-auto pb-4 pt-8 md:pt-4 custom-scrollbar">
           <div 
             className="grid gap-1 md:gap-1.5 relative z-10 mx-auto"
             style={{ 
@@ -730,7 +730,7 @@ export default function App() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-gray-100 max-h-[90vh] overflow-y-auto scrollbar-hide"
+              className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-gray-100 max-h-[90vh] overflow-y-auto custom-scrollbar"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
