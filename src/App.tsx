@@ -480,14 +480,14 @@ export default function App() {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="w-full max-w-fit mb-8 flex items-center gap-6"
+        className="w-full max-w-fit mb-6 md:mb-8 flex items-center gap-3 md:gap-6"
       >
         <StatBox label="MINES" value={CONFIG[difficulty].mines - flagsUsed} />
         <button 
           onClick={resetGame}
-          className="group p-4 bg-white border border-gray-200 rounded-2xl hover:border-blue-500 transition-all active:scale-95 shadow-sm"
+          className="group p-3 md:p-4 bg-white border border-gray-200 rounded-xl md:rounded-2xl hover:border-blue-500 transition-all active:scale-95 shadow-sm"
         >
-          <RefreshCw className={`w-6 h-6 transition-transform group-hover:rotate-180 ${gameState === 'playing' ? 'text-blue-500' : 'text-gray-400'}`} />
+          <RefreshCw className={`w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:rotate-180 ${gameState === 'playing' ? 'text-blue-500' : 'text-gray-400'}`} />
         </button>
         <StatBox label="TIME" value={timer} />
       </motion.div>
@@ -495,30 +495,32 @@ export default function App() {
       {/* Game Board */}
       <motion.div 
         layout
-        className="relative p-10 bg-white rounded-[2.5rem] border border-gray-200 shadow-xl overflow-hidden"
+        className="relative w-full max-w-full p-4 md:p-10 bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-gray-200 shadow-xl overflow-hidden"
       >
         {/* Decorative corner element */}
-        <div className="absolute top-0 left-0 w-24 h-24 bg-gray-50 -translate-x-12 -translate-y-12 rotate-45 border-r border-gray-200 z-0" />
-        <div className="absolute top-4 left-4 text-[10px] font-bold text-gray-300 uppercase tracking-widest z-20">
+        <div className="absolute top-0 left-0 w-16 h-16 md:w-24 md:h-24 bg-gray-50 -translate-x-8 -translate-y-8 md:-translate-x-12 md:-translate-y-12 rotate-45 border-r border-gray-200 z-0" />
+        <div className="absolute top-3 left-3 md:top-4 md:left-4 text-[8px] md:text-[10px] font-bold text-gray-300 uppercase tracking-widest z-20">
           Grid: {CONFIG[difficulty].rows}x{CONFIG[difficulty].cols}
         </div>
         
-        <div 
-          className="grid gap-1.5 relative z-10 mt-4"
-          style={{ 
-            gridTemplateColumns: `repeat(${CONFIG[difficulty].cols}, minmax(0, 1fr))`,
-            width: 'fit-content'
-          }}
-        >
-          {grid.map((row, y) => row.map((cell, x) => (
-            <CellComponent 
-              key={`${x}-${y}`} 
-              cell={cell} 
-              onClick={() => handleCellClick(x, y)}
-              onRightClick={(e) => handleRightClick(e, x, y)}
-              isGameOver={gameState === 'lost' || gameState === 'won'}
-            />
-          )))}
+        <div className="overflow-x-auto pb-4 pt-8 md:pt-4 scrollbar-hide">
+          <div 
+            className="grid gap-1 md:gap-1.5 relative z-10 mx-auto"
+            style={{ 
+              gridTemplateColumns: `repeat(${CONFIG[difficulty].cols}, auto)`,
+              width: 'fit-content'
+            }}
+          >
+            {grid.map((row, y) => row.map((cell, x) => (
+              <CellComponent 
+                key={`${x}-${y}`} 
+                cell={cell} 
+                onClick={() => handleCellClick(x, y)}
+                onRightClick={(e) => handleRightClick(e, x, y)}
+                isGameOver={gameState === 'lost' || gameState === 'won'}
+              />
+            )))}
+          </div>
         </div>
 
         {/* Overlay for Win/Loss */}
@@ -785,9 +787,9 @@ export default function App() {
 
 function StatBox({ label, value }: { label: string, value: number | string }) {
   return (
-    <div className="bg-white border border-gray-200 px-8 py-4 rounded-2xl flex flex-col items-center min-w-[140px] shadow-sm">
-      <span className="text-[10px] font-bold text-gray-400 tracking-[0.2em] mb-1">{label}</span>
-      <span className="text-3xl font-bold text-gray-900 tabular-nums">
+    <div className="bg-white border border-gray-200 px-4 md:px-8 py-3 md:py-4 rounded-xl md:rounded-2xl flex flex-col items-center min-w-[100px] md:min-w-[140px] shadow-sm">
+      <span className="text-[8px] md:text-[10px] font-bold text-gray-400 tracking-[0.2em] mb-1">{label}</span>
+      <span className="text-xl md:text-3xl font-bold text-gray-900 tabular-nums">
         {String(value).padStart(3, '0')}
       </span>
     </div>
@@ -819,12 +821,12 @@ const CellComponent = React.memo(({
 
   // Explicitly define classes to avoid any sync issues
   const getCellClasses = () => {
-    const base = "w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-sm font-black cursor-pointer rounded-lg select-none ";
+    const base = "w-7 h-7 md:w-10 md:h-10 flex items-center justify-center text-xs md:text-sm font-black cursor-pointer rounded-md md:rounded-lg select-none ";
     if (isRevealed) {
       if (cell.isMine) return base + "bg-red-500 text-white shadow-none border-none";
       return base + "bg-white border border-gray-100 shadow-none";
     }
-    return base + "bg-gray-200 border-b-4 border-r-4 border-gray-400 shadow-lg active:border-b-2 active:border-r-2 active:translate-y-[2px]";
+    return base + "bg-gray-200 border-b-2 md:border-b-4 border-r-2 md:border-r-4 border-gray-400 shadow-md md:shadow-lg active:border-b-1 md:active:border-b-2 active:border-r-1 md:active:border-r-2 active:translate-y-[1px] md:active:translate-y-[2px]";
   };
 
   return (
